@@ -199,12 +199,19 @@ main {
     border-radius: 8px;
     transition: 200ms;
 }
-.btn:is(:hover, :focus) {
+.btn:not(:disabled):is(:hover, :focus) {
     background: #f4f4f4;
     outline: 0;
 }
+.btn:disabled {
+    background: #f8f8f8;
+}
 .btn-icon, .btn-label {
     margin: 2px;
+}
+.btn-status {
+    font-size: 0.8em;
+    color: #808080;
 }
 .schedule {
     width: min-content;

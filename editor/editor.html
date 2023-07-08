@@ -5,7 +5,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Redigera schema</title>
-    <link rel="shortcut icon" href="../favicon-editor.svg" type="image/svg+xml">
+    <link rel="shortcut icon" href="favicon-editor.svg" type="image/svg+xml">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@400;600;700&display=swap">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
     <link rel="stylesheet" href="../style.css">
@@ -28,7 +28,7 @@
                     <div class="modal-content">
                         <div class="modal-field">
                             <i class="modal-field-icon fa-solid fa-chalkboard-user"></i>
-                            <span class="modal-field-span">{{ template(modal).teachers.map(id => schedule.teachers.find(teacher => teacher.id == id).name || "NULL").join(", ") }}</span>
+                            <span class="modal-field-span">{{ template(modal).teachers?.map(id => schedule.teachers.find(teacher => teacher.id == id)?.name || "NULL").join(", ") }}</span>
                         </div>
                         <div v-if="modal.pupils?.length" class="modal-field">
                             <i class="modal-field-icon fa-solid fa-users"></i>
@@ -41,7 +41,7 @@
                     <button @click="removeSubject(modal.id)" class="modal-btn btn-danger">Radera</button>
                 </div>
             </div>
-            <form v-if="modalType == 'input'" @submit.prevent="modal.done" id="form" class="modal-container">
+            <div v-if="modalType == 'input'" id="form" class="modal-container">
                 <div class="modal-main">
                     <div class="modal-top">
                         <span v-if="modalArgs[0] == 'subject'" class="modal-label">
@@ -114,38 +114,13 @@
                             </select>
                         </div>
                     </div>
-                    <div v-if="modalArgs[0] == 'import'" class="modal-content">
-                        <div class="modal-field">
-                            <textarea v-model="modalInput" class="modal-field-input modal-field-textarea" placeholder="Klistra in schema här"></textarea>
-                        </div>
-                    </div>
                 </div>
                 <div class="modal-btns">
-                    <button type="submit" class="modal-btn btn-success">OK</button>
-                    <button type="button" @click="closeModal" class="modal-btn">Avbryt</button>
+                    <button @click="modal.done" class="modal-btn btn-success">OK</button>
+                    <button @click="closeModal" class="modal-btn">Avbryt</button>
                 </div>
                 <div v-if="modal.error" class="modal-err">
                     <span class="modal-err-text">{{ modal.error }}</span>
-                </div>
-            </form>
-            <div v-if="modalType == 'export'" class="modal-container">
-                <div class="modal-main">
-                    <div class="modal-top">
-                        <span class="modal-label">
-                            <span>Exportera schema</span>
-                        </span>
-                        <button @click="closeModal" class="modal-close">
-                            <i class="fa-solid fa-xmark"></i>
-                        </button>
-                    </div>
-                    <div class="modal-content">
-                        <div class="modal-field">
-                            <textarea id="export" class="modal-field-input modal-field-textarea">{{ modal }}</textarea>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-btns">
-                    <button @click="copyExportFile" class="modal-btn">Kopiera</button>
                 </div>
             </div>
         </div>
@@ -154,18 +129,19 @@
         <div class="content">
             <main>
                 <div class="btns">
-                    <button @click="importModal" class="btn">
-                        <i class="fa-solid fa-download btn-icon"></i>
-                        <span class="btn-label">Importera</span>
+                    <button @click="window.open('../index.html', '_self')" class="btn">
+                        <i class="fa-solid fa-calendar-week btn-icon"></i>
+                        <span class="btn-label">Visa schema</span>
                     </button>
-                    <button @click="exportModal" class="btn">
-                        <i class="fa-solid fa-upload btn-icon"></i>
-                        <span class="btn-label">Exportera</span>
+                    <button @click="saveSchedule" :disabled="!hasUnsavedChanges" class="btn">
+                        <i class="fa-solid fa-floppy-disk btn-icon"></i>
+                        <span class="btn-label">Spara</span>
+                        <i v-if="hasUnsavedChanges" class="fa-solid fa-circle btn-status" title="Du har osparade ändringar"></i>
                     </button>
                 </div>
                 <div class="top">
-                    <input v-model="schedule.label" type="text" class="top-input" placeholder="Namn Klass (Ludvig 8D)">
-                    <input v-model="schedule.revision" type="text" class="top-input" placeholder="Revision (vt23.2.3)">
+                    <input v-model="schedule.label" @input="markUnsaved" type="text" class="top-input" placeholder="Namn Klass (Ludvig 8D)">
+                    <input v-model="schedule.revision" @input="markUnsaved" type="text" class="top-input" placeholder="Revision (vt23.2.3)">
                 </div>
                 <div :style="{'height': (schedule.end - schedule.begin) * scheduleScale + 16 + 'px'}" class="schedule">
                     <div v-for="dayI in 5" @click="$event.ctrlKey ? subjectCreateModal(dayI, $event) : void(0)" @dblclick="subjectCreateModal(dayI, $event)" class="schedule-col">
@@ -195,7 +171,7 @@
                                 }" class="schedule-row subject">
                                 <span class="subject-name">{{ template(subject).name }}</span>
                                 <span class="subject-times">{{ humanTime(subject.begin) }} - {{ humanTime(subject.begin + subject.length) }}</span>
-                                <span class="subject-teachers">{{ template(subject).teachers.map(id => schedule.teachers.find(teacher => teacher.id == id).name || "NULL").join(", ") }}</span>
+                                <span class="subject-teachers">{{ template(subject).teachers?.map(id => schedule.teachers.find(teacher => teacher.id == id)?.name || "NULL").join(", ") }}</span>
                             </div>
                         </div>
                     </div>
@@ -224,8 +200,8 @@
                 </div>
             </main>
             <aside>
-                <div class="config teachers" :class="{ 'config-show': configType == 'teachers' }">
-                    <button class="config-top" @click="toggleConfig('teachers')">
+                <div class="config teachers" :class="{ 'config-show': configMenu == 'teachers' }">
+                    <button class="config-top" @click="toggleConfigMenu('teachers')">
                         <h2 class="config-top-title">Lärare</h2>
                         <i class="fa-solid fa-angle-up config-top-icon"></i>
                     </button>
@@ -244,15 +220,15 @@
                         </form>
                     </div>
                 </div>
-                <div class="config templates" :class="{ 'config-show': configType == 'templates' }">
-                    <button class="config-top" @click="toggleConfig('templates')">
+                <div class="config templates" :class="{ 'config-show': configMenu == 'templates' }">
+                    <button class="config-top" @click="toggleConfigMenu('templates')">
                         <h2 class="config-top-title">Mallar</h2>
                         <i class="fa-solid fa-angle-up config-top-icon"></i>
                     </button>
                     <div class="config-content">
                         <div v-for="template in schedule.templates" @mouseover="startTemplateFilter(template.id)" @mouseout="endTemplateFilter(template.id)" class="templates-field">
                             <span class="templates-field-name">{{ template.name }}</span>
-                            <span class="templates-field-teachers">{{ template.teachers.map(id => schedule.teachers.find(teacher => teacher.id == id).name || "NULL").join(", ") }}</span>
+                            <span class="templates-field-teachers">{{ template.teachers.map(id => schedule.teachers.find(teacher => teacher.id == id)?.name || "NULL").join(", ") }}</span>
                             <div class="templates-field-btns">
                                 <button @click="editTemplateModal(template.id)" type="submit" class="templates-field-btn">
                                     <i class="fa-solid fa-pencil"></i>
