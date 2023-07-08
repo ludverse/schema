@@ -7,7 +7,29 @@ createApp({
     modal: null,
     modalType: null,
     modalInput: null,
-    schedule,
+    schedule: {
+        version: 3,
+        label: "",
+        revision: "vt23.0.0",
+        begin: 510,
+        end: 900,
+        colors: {
+            red: "#fc5c65",
+            orange: "#fd9644",
+            yellow: "#fed330",
+            green: "#26de81",
+            turquoise: "#2bcbba",
+            aqua: "#45aaf2",
+            blue: "#4b7bec",
+            purple: "#a55eea",
+            gray: "#a3a3a3",
+            black: "#4b6584"
+        },
+        teachers: [], 
+        templates: [],
+        exeptions: [],
+        subjects: []
+    },
     scheduleScale: 2,
     tags: [ ],
     today: (new Date().getDay()),
@@ -74,9 +96,9 @@ createApp({
         return Math.round((y + this.schedule.begin) / this.scheduleScale + 182);
     },
 
-    tagInputModal(day, e) {
+    tagInputModal(dayI, e) {
         this.modalInput = { time: this.humanTime(this.eventYToScheduleTime(e.clientY + window.scrollY), true), label: "" }
-        this.showModal("input:tag", { done: this.createTag.bind(this, day) });
+        this.showModal("input:tag", { done: this.createTag.bind(this, dayI) });
     },
 
     createTag(dayI) {
@@ -105,12 +127,12 @@ createApp({
         this.closeModal();
     },
 
-    print() {
-        print();
-    },
-
     mounted() {
-        
+        const rawSchedule = localStorage.getItem("schedule");
+        if (rawSchedule) {
+            this.schedule = JSON.parse(rawSchedule);
+        }
+
         this.tagPlaceholder = NaN;
         window.addEventListener("keydown", e => {
             if (e.key == "Escape") {
@@ -140,8 +162,10 @@ createApp({
         setInterval(() => this.now = (new Date().getHours() * 60 + new Date().getMinutes()), 1000);
 
         const d = new Date();
-        if (!localStorage.getItem("tagsExpire") || localStorage.getItem("tagsExpire") < d.getTime()) {
+        const tagsExpire = localStorage.getItem("tagsExpire");
+        if (!tagsExpire || tagsExpire < d.getTime()) {
             localStorage.setItem("tags", "[]");
+
             const midnight = new Date(d.getTime());
             midnight.setHours(0, 0, 0, 0);
             const nextExpire = new Date(midnight.setDate(midnight.getDate() + ((7 - midnight.getDay() + 1) % 7 || 7)));
@@ -151,5 +175,10 @@ createApp({
         }
 
         this.loaded = true;
-    }
+
+        const params = new URLSearchParams(location.search);
+        if (params.get("print") == "1") {
+            this.print();
+        }
+    },
 }).mount("#root");

@@ -26,48 +26,7 @@ const app = vue.createApp({
             gray: "#a3a3a3",
             black: "#4b6584"
         },
-        teachers: [
-            {
-                id: "69f250ea-30b0-4473-b8a9-808f24397572",
-                name: "Magnus"
-            },
-            {
-                id: "d8f11ce0-1780-4d19-a560-66e4ca155686",
-                name: "Cecilia"
-            },
-            {
-                id: "e6ecf60c-daa8-404a-85ec-3b63f6f2fe5d",
-                name: "Jonas"
-            },
-            {
-                id: "c60a5a04-f0b2-4d56-9c68-edc688d789d4",
-                name: "Ebistam"
-            },
-            {
-                id: "4aeaf7cd-79c2-4d4a-a7d0-bedde322a53d",
-                name: "Lotta"
-            },
-            {
-                id: "f08759ee-9758-4d6e-ade4-1cd2a11acd46",
-                name: "Bitte"
-            },
-            {
-                id: "6dcacab8-5b1d-4445-b005-8e8eaeb60b88",
-                name: "Niklas"
-            },
-            {
-                id: "4d4c0c6f-e298-45f8-8f7e-0ce476df31ba",
-                name: "Annika RTX"
-            },
-            {
-                id: "77432400-3891-4749-9073-e8cacdfc92e5",
-                name: "Ayla"
-            },
-            {
-                id: "e7e2f7b3-5965-496a-aa96-5963e7995b43",
-                name: "Rikard"
-            }
-        ], 
+        teachers: [], 
         templates: [],
         exeptions: [],
         subjects: []
@@ -78,7 +37,8 @@ const app = vue.createApp({
     loaded: false,
     warning: "",
     templateFilter: null,
-    configType: null,
+    configMenu: null,
+    hasUnsavedChanges: false,
 
     humanTime: (time, padHours = false) => {
         return `${ Math.floor(time % 1440 / 60).toString().padStart(padHours + 1, "0") }:${ (time % 1440 % 60).toString().padStart(2, "0") }`;
@@ -234,6 +194,7 @@ const app = vue.createApp({
             begin,
             length
         });
+        this.markUnsaved();
     },
 
     editSubject(subjectId) {
@@ -263,11 +224,13 @@ const app = vue.createApp({
             begin,
             length
         }
+        this.markUnsaved();
     },
 
     removeSubject(subjectId) {
         const subjectI = this.schedule.subjects.findIndex(subject => subject.id == subjectId);
         this.schedule.subjects.splice(subjectI, 1);
+        this.markUnsaved();
 
         this.closeModal();
     },
@@ -276,41 +239,18 @@ const app = vue.createApp({
         return Math.round((y + this.schedule.begin) / this.scheduleScale + 171);
     },
 
-    importModal() {
-        this.modalInput = "";
-        this.showModal("input:import", {
-            label: "Importera schema",
-            done: this.importSchedule,
-            error: null
-        });
+    saveSchedule() {
+        localStorage.setItem("schedule", JSON.stringify(this.schedule));
+        this.hasUnsavedChanges = false;
     },
 
-    importSchedule() {
-        let backup = { ...this.schedule };
-        try {
-            const schedule = JSON.parse(this.modalInput.replace("const schedule = ", ""));
-            this.schedule = schedule;
-
-            this.closeModal();
-        } catch {
-            this.schedule = backup;
-            this.modal.error = "Det gick inte att läsa in schemat";
-        }
+    markUnsaved() {
+        console.log("unsaved change", this);
+        this.hasUnsavedChanges = JSON.stringify(this.schedule) != localStorage.getItem("schedule");
     },
 
-    exportModal() {
-        this.showModal('export');
-        this.modal = `const schedule = ${ JSON.stringify(this.schedule) }`
-    },
-
-    copyExportFile() {
-        let textarea = document.getElementById("export");
-        textarea.select();
-        document.execCommand("copy");
-    },
-
-    toggleConfig(type) {
-        this.configType = this.configType == type ? null : type;
+    toggleConfigMenu(type) {
+        this.configMenu = this.configMenu == type ? null : type;
     },
 
     addTeacher() {
@@ -318,6 +258,8 @@ const app = vue.createApp({
             id: this.uuid(),
             name: this.scheduleTeacherInput
         });
+        this.markUnsaved();
+
         this.scheduleTeacherInput = "";
     },
 
@@ -325,9 +267,16 @@ const app = vue.createApp({
         const i = this.schedule.teachers.findIndex(teacher => teacher.id == teacherId);
         this.schedule.teachers.splice(i, 1);
 
-        this.schedule.subjecs.map(subject => {
-            return subject.teachers.filter(teacher => teacher.id != teacherId)
-        });
+        // const purgeTeacher = array => array.map(subject => {
+        //     console.log(subject.teachers, teacherId);
+        //     const teachers = subject.teachers.filter(teacher => teacher != teacherId);
+        //     console.log(teachers);
+        //     return Object.assign(subject, { teachers });
+        // });
+
+        // this.schedule.templates = purgeTeacher(this.schedule.templates);
+        // this.schedule.subjects = purgeTeacher(this.schedule.subjects);
+        this.markUnsaved();
     },
 
     startTemplateFilter(id) {
@@ -377,6 +326,7 @@ const app = vue.createApp({
             teachers: inputTeachers,
             color: this.modalInput.color
         });
+        this.markUnsaved();
     },
 
     editTemplate(templateId) {
@@ -392,6 +342,7 @@ const app = vue.createApp({
             teachers: inputTeachers,
             color: this.modalInput.color
         }
+        this.markUnsaved();
     },
     
     deleteTemplate(templateId) {
@@ -400,18 +351,23 @@ const app = vue.createApp({
         
         const templateI = this.schedule.templates.findIndex(template => template.id == templateId);
         this.schedule.templates.splice(templateI, 1);
+        this.markUnsaved();
         
         this.closeModal();
     },
     
     mounted() {
+        let rawSchedule =  localStorage.getItem("schedule");
+        if (rawSchedule) {
+            this.schedule = JSON.parse(rawSchedule);
+        }
         
         this.createPlaceholder = NaN;
         window.addEventListener("keydown", e => {
             if (e.key == "Escape") {
                 this.closeModal();
-            } else if (e.key == "Enter") {
-                document.getElementById("form").submit();
+            } else if (e.key == "Enter" && this.modal) {
+                this.modal.done();
             }
         });
 
@@ -432,6 +388,13 @@ const app = vue.createApp({
             console.warn("Old schedule version");
             this.warning = "Detta schema är gjort för en äldre version och vissa delar kan sluta fungera.";
         }
+
+        window.addEventListener("beforeunload", e => {
+            if (this.hasUnsavedChanges) {
+                e.preventDefault();
+                return (e.returnValue = "Du har osparade ändringar, vill du fortsätta?");
+            }
+        });
 
         this.loaded = true;
     }
