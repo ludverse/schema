@@ -1,6 +1,8 @@
 
 const VERSION = 3;
-import * as vue from "../petite-vue.module.js";
+import * as vue from "https://unpkg.com/petite-vue?module";
+
+const SCHEDULE_MOUSE_OFFSET = 196;
 
 const app = vue.createApp({
     $template: "root",
@@ -37,7 +39,8 @@ const app = vue.createApp({
     loaded: false,
     warning: "",
     templateFilter: null,
-    configMenu: null,
+    configMenus: [],
+    allowConfigMenuToggling: true,
     hasUnsavedChanges: false,
 
     humanTime: (time, padHours = false) => {
@@ -53,6 +56,9 @@ const app = vue.createApp({
         return split[0] * 60 + Number(split[1]) + day * 1440;
     },
     dateToTime: date => date.getHours() * 60 + date.getMinutes(),
+    mouseYToScheduleTime(y) {
+        return Math.round((y + this.schedule.begin) / this.scheduleScale + SCHEDULE_MOUSE_OFFSET);
+    },
     template(subject) {
         if (subject.template) {
             return { ...this.schedule.templates.find(template => template.id == subject.template), ...subject };
@@ -101,7 +107,7 @@ const app = vue.createApp({
     },
 
     subjectCreateModal(day, e) {
-        const begin = Math.round(this.eventYToScheduleTime(e.clientY + window.scrollY) / 5) * 5;
+        const begin = Math.round(this.mouseYToScheduleTime(e.clientY + window.scrollY) / 5) * 5;
 
         this.modalInput = {
             name: "",
@@ -235,10 +241,6 @@ const app = vue.createApp({
         this.closeModal();
     },
 
-    eventYToScheduleTime(y) {
-        return Math.round((y + this.schedule.begin) / this.scheduleScale + 171);
-    },
-
     saveSchedule() {
         localStorage.setItem("schedule", JSON.stringify(this.schedule));
         this.hasUnsavedChanges = false;
@@ -249,8 +251,14 @@ const app = vue.createApp({
         this.hasUnsavedChanges = JSON.stringify(this.schedule) != localStorage.getItem("schedule");
     },
 
-    toggleConfigMenu(type) {
-        this.configMenu = this.configMenu == type ? null : type;
+    toggleConfigMenu(menuType) {
+        if (!this.allowConfigMenuToggling) return;
+
+        if (this.configMenus.includes(menuType)) {
+            this.configMenus.splice(this.configMenus.indexOf(menuType), 1);
+        } else {
+            this.configMenus.push(menuType);
+        }
     },
 
     addTeacher() {
@@ -378,16 +386,11 @@ const app = vue.createApp({
         });
         window.addEventListener("mousemove", e => {
             if (e.ctrlKey && !this.modalType) {
-                this.createPlaceholder = Math.round(this.eventYToScheduleTime(e.clientY + window.scrollY) / 5) * 5;
+                this.createPlaceholder = Math.round(this.mouseYToScheduleTime(e.clientY + window.scrollY) / 5) * 5;
             } else {
                 this.createPlaceholder = NaN;
             }
         });
-
-        if (!this.schedule.version || this.schedule.version < VERSION) {
-            console.warn("Old schedule version");
-            this.warning = "Detta schema är gjort för en äldre version och vissa delar kan sluta fungera.";
-        }
 
         window.addEventListener("beforeunload", e => {
             if (this.hasUnsavedChanges) {
@@ -395,6 +398,18 @@ const app = vue.createApp({
                 return (e.returnValue = "Du har osparade ändringar, vill du fortsätta?");
             }
         });
+
+        const updateAllowConfigMenuToggling = () => {
+            this.allowConfigMenuToggling = document.querySelector("#config-container").clientWidth < 528;
+        }
+
+        window.addEventListener("resize", updateAllowConfigMenuToggling);
+        requestAnimationFrame(updateAllowConfigMenuToggling);
+
+        if (!this.schedule.version || this.schedule.version < VERSION) {
+            console.warn("Old schedule version");
+            this.warning = "Detta schema är gjort för en äldre version och vissa delar kan sluta fungera.";
+        }
 
         this.loaded = true;
     }

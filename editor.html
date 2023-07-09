@@ -4,12 +4,12 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Redigera schema</title>
-    <link rel="shortcut icon" href="favicon-editor.svg" type="image/svg+xml">
+    <title>Redigerar schema</title>
+    <link rel="shortcut icon" href="assets/img/favicon-editor.svg" type="image/svg+xml">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@400;600;700&display=swap">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
-    <link rel="stylesheet" href="../style.css">
-    <script src="editor.js" type="module" defer></script>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
+        <link rel="stylesheet" href="assets/css/global.css">
+    <script src="assets/js/editor.html.js" type="module" defer></script>
 </head>
 <body>
     <div @vue:mounted="mounted" :class="{ 'loaded': loaded }" id="root">
@@ -124,12 +124,11 @@
                 </div>
             </div>
         </div>
-        <h1 class="title">Schema</h1>
         <span v-if="warning" class="warning">{{ warning }}</span>
         <div class="content">
             <main>
                 <div class="btns">
-                    <button @click="window.open('../index.html', '_self')" class="btn">
+                    <button @click="window.open('index.html', '_self')" class="btn">
                         <i class="fa-solid fa-calendar-week btn-icon"></i>
                         <span class="btn-label">Visa schema</span>
                     </button>
@@ -199,11 +198,11 @@
                     </div>
                 </div>
             </main>
-            <aside>
-                <div class="config teachers" :class="{ 'config-show': configMenu == 'teachers' }">
-                    <button class="config-top" @click="toggleConfigMenu('teachers')">
+            <aside id="config-container">
+                <div class="config teachers" :class="{ 'config-show': !allowConfigMenuToggling || configMenus.includes('teachers') }">
+                    <button @click="toggleConfigMenu('teachers')" :disabled="!allowConfigMenuToggling" class="config-top">
                         <h2 class="config-top-title">Lärare</h2>
-                        <i class="fa-solid fa-angle-up config-top-icon"></i>
+                        <i v-if="allowConfigMenuToggling" class="fa-solid fa-angle-up config-top-icon"></i>
                     </button>
                     <div class="config-content">
                         <div v-for="(teacher, i) in schedule.teachers" class="teachers-field">
@@ -220,10 +219,10 @@
                         </form>
                     </div>
                 </div>
-                <div class="config templates" :class="{ 'config-show': configMenu == 'templates' }">
-                    <button class="config-top" @click="toggleConfigMenu('templates')">
+                <div class="config templates" :class="{ 'config-show': !allowConfigMenuToggling || configMenus.includes('templates') }">
+                    <button @click="toggleConfigMenu('templates')" :disabled="!allowConfigMenuToggling" class="config-top">
                         <h2 class="config-top-title">Mallar</h2>
-                        <i class="fa-solid fa-angle-up config-top-icon"></i>
+                        <i v-if="allowConfigMenuToggling" class="fa-solid fa-angle-up config-top-icon"></i>
                     </button>
                     <div class="config-content">
                         <div v-for="template in schedule.templates" @mouseover="startTemplateFilter(template.id)" @mouseout="endTemplateFilter(template.id)" class="templates-field">
