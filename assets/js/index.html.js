@@ -1,6 +1,8 @@
 
 const VERSION = 3;
-import { createApp } from "./petite-vue.module.js";
+import { createApp } from "https://unpkg.com/petite-vue?module";
+
+const SCHEDULE_MOUSE_OFFSET = 205;
 
 createApp({
     $template: "root",
@@ -51,6 +53,9 @@ createApp({
         return split[0] * 60 + Number(split[1]) + day * 1440;
     },
     dateToTime: date => date.getHours() * 60 + date.getMinutes(),
+    mouseYToScheduleTime(y) {
+        return Math.round((y + this.schedule.begin) / this.scheduleScale + SCHEDULE_MOUSE_OFFSET);
+    },
     template(subject) {
         if (subject.template) {
             return { ...this.schedule.templates.find(template => template.id == subject.template), ...subject };
@@ -92,12 +97,8 @@ createApp({
         this.modalType = null;
     },
 
-    eventYToScheduleTime(y) {
-        return Math.round((y + this.schedule.begin) / this.scheduleScale + 182);
-    },
-
     tagInputModal(dayI, e) {
-        this.modalInput = { time: this.humanTime(this.eventYToScheduleTime(e.clientY + window.scrollY), true), label: "" }
+        this.modalInput = { time: this.humanTime(this.mouseYToScheduleTime(e.clientY + window.scrollY), true), label: "" }
         this.showModal("input:tag", { done: this.createTag.bind(this, dayI) });
     },
 
@@ -147,7 +148,7 @@ createApp({
         });
         window.addEventListener("mousemove", e => {
             if (e.ctrlKey && !this.modalType) {
-                this.tagPlaceholder = this.eventYToScheduleTime(e.clientY + window.scrollY);
+                this.tagPlaceholder = this.mouseYToScheduleTime(e.clientY + window.scrollY);
             } else {
                 this.tagPlaceholder = NaN;
             }
