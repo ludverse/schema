@@ -207,6 +207,9 @@ const app = vue.createApp({
         const subjectI = this.schedule.subjects.findIndex(subject => subject.id == subjectId);
         const dayI = Math.floor(this.schedule.subjects[subjectI].begin / 1440) + 1;
 
+        if (!this.modalInput.name) return this.modal.error = "Skriv in ett namn för ämnet";
+        if (this.modalInput.teachers.length <= 1) return this.modal.error = "Skriv in minst 1 lärare";
+
         this.closeModal();
     
         const begin = this.scheduleTime(this.modalInput.begin, dayI - 1);
@@ -324,6 +327,8 @@ const app = vue.createApp({
     },
 
     createTemplate() {
+        if (!this.modalInput.name) return this.modal.error = "Skriv in ett namn för mallen";
+
         this.closeModal();
         
         const inputTeachers = this.modalInput.teachers.filter(a => a != "null");
@@ -353,7 +358,7 @@ const app = vue.createApp({
         this.markUnsaved();
     },
     
-    deleteTemplate(templateId) {
+    removeTemplate(templateId) {
         this.schedule.subjects = this.schedule.subjects.filter(subject => subject.template != templateId);
         this.templateFilter = null;
         
@@ -374,8 +379,13 @@ const app = vue.createApp({
         window.addEventListener("keydown", e => {
             if (e.key == "Escape") {
                 this.closeModal();
-            } else if (e.key == "Enter" && this.modal) {
+            } else if (e.key == "Enter" && this.modalType == "input") {
                 this.modal.done();
+            } else if (e.key == "Delete" && this.modalType == "subject") {
+                this.removeSubject(this.modal.id);
+            } else if (e.ctrlKey && e.key == "s") {
+                this.saveSchedule();
+                e.preventDefault();
             }
         });
 

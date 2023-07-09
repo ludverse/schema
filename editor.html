@@ -206,7 +206,7 @@
                     </button>
                     <div class="config-content">
                         <div v-for="(teacher, i) in schedule.teachers" class="teachers-field">
-                            <input v-model="teacher.name" type="text" class="teachers-field-input">
+                            <input v-model="teacher.name" @input="markUnsaved" type="text" class="teachers-field-input">
                             <button @click="removeTeacher(teacher.id)" class="teachers-field-removebtn">
                                 <i class="fa-solid fa-minus-circle"></i>
                             </button>
@@ -232,7 +232,7 @@
                                 <button @click="editTemplateModal(template.id)" type="submit" class="templates-field-btn">
                                     <i class="fa-solid fa-pencil"></i>
                                 </button>
-                                <button @click="deleteTemplate(template.id)" class="templates-field-btn btn-danger">
+                                <button @click="removeTemplate(template.id)" class="templates-field-btn btn-danger">
                                     <i class="fa-solid fa-trash"></i>
                                 </button>
                             </div>
