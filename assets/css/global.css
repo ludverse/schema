@@ -288,13 +288,11 @@ main {
 
 .subject {
     padding: 6px;
-    width: calc(100% / var(--divide));
+    width: 100%;
     height: var(--height);
     display: flex;
     flex-direction: column;
-    left: calc(100% / var(--divide) * (var(--position) - 1));
     color: #ffffff;
-    background: var(--background);
     border-radius: 4px;
     overflow: hidden;
     box-sizing: border-box;
@@ -510,10 +508,12 @@ aside {
 .templates-field {
     margin: 4px;
     padding: 8px;
+    width: 100%;
     display: grid;
     border: 1px solid #dfdfdf;
     border-radius: 8px;
     transition: 200ms;
+    overflow: hidden;
 }
 
 .templates-field:hover {

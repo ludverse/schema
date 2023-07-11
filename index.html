@@ -104,9 +104,15 @@
                     <span class="top-label">{{ schedule.revision }}</span>
                 </div>
                 <div :style="{'height': (schedule.end - schedule.begin) * scheduleScale + 16 + 'px'}" class="schedule">
-                    <div v-for="dayI in 5" @click="$event.ctrlKey ? tagInputModal(dayI - 1, $event) : void(0)" @dblclick="tagInputModal(dayI - 1, $event)" class="schedule-col">
+                    <div v-for="dayI in 5" @click="$event.ctrlKey ? createTagModal(dayI - 1, $event) : void(0)" @dblclick="createTagModal(dayI - 1, $event)" class="schedule-col">
                         <div v-for="subject in schedule.subjects.filter(a => a.begin > (dayI - 1) * 1440 && a.begin < dayI * 1440)" class="subject-container">
-                            <div @click="$event.ctrlKey ? void(0) : showModal('subject', subject)" :style="{ '--background': schedule.colors[template(subject).color], '--divide': getInterfearData(subject).divide, '--position': getInterfearData(subject).position, '--height': subject.length * scheduleScale + 'px', 'top': (subject.begin - 1440 * (dayI - 1) - schedule.begin) * scheduleScale - 1 + 'px' }" class="schedule-row subject">
+                            <div
+                                @click="$event.ctrlKey ? void(0) : showModal('subject', subject)"
+                                :style="{
+                                    '--height': subject.length * scheduleScale + 'px',
+                                    'background': schedule.colors[template(subject).color],
+                                    'top': (subject.begin - 1440 * (dayI - 1) - schedule.begin) * scheduleScale - 1 + 'px'
+                                }" class="schedule-row subject">
                                 <span class="subject-name">{{ template(subject).name }}</span>
                                 <span class="subject-times">{{ humanTime(subject.begin) }} - {{ humanTime(subject.begin + subject.length) }}</span>
                                 <span class="subject-teachers">{{ template(subject).teachers?.map(id => schedule.teachers.find(teacher => teacher.id == id).name || "NULL").join(", ") }}</span>
@@ -114,7 +120,7 @@
                         </div>
                         <div class="subject-container" style="width: 100%; left: 0;">
                             <span v-if="today - 1 == dayI - 1 && now > schedule.begin && now < schedule.end" :style="{ top: (now - schedule.begin) * scheduleScale + 'px' }" class="schedule-now"></span>
-                            <span v-if="tagPlaceholder" :style="{ top: (tagPlaceholder - schedule.begin - 4) * scheduleScale + 'px' }" class="schedule-tag schedule-tag-placeholder"><small>{{ humanTime(tagPlaceholder) }}</small></span>
+                            <span v-if="tagCreationPlaceholder" :style="{ top: (tagCreationPlaceholder - schedule.begin - 4) * scheduleScale + 'px' }" class="schedule-tag schedule-tag-placeholder"><small>{{ humanTime(tagCreationPlaceholder) }}</small></span>
                             <span v-for="tag in tags.filter(a => a.time > (dayI - 1) * 1440 && a.time < dayI * 1440)" @click="showModal('tag', tag)" :style="{ top: (tag.time - 1440 * (dayI - 1) - schedule.begin - 4) * scheduleScale + 'px' }" class="schedule-tag"><small>{{ humanTime(tag.time) }}</small> {{ tag.label }}</span>
                         </div>
                     </div>

@@ -35,7 +35,7 @@ const app = vue.createApp({
     },
     scheduleScale: 2,
     scheduleTeacherInput: "",
-    createPlaceholder: NaN,
+    subjectCreationPlaceholder: NaN,
     loaded: false,
     warning: "",
     templateFilter: null,
@@ -77,22 +77,6 @@ const app = vue.createApp({
             var r = Math.random() * 16 | 0, v = c == "x" ? r : (r & 0x3 | 0x8);
             return v.toString(16);
         });
-    },
-
-    getInterfearData(subject) {
-        const end = subject.begin + subject.length;
-        const interfearing = this.schedule.subjects.map((obj, i) => {
-            const aEnd = obj.begin + obj.length;
-            if (subject.id == obj.id) return;
-            if ((subject.begin <= aEnd) && (end >= obj.begin)) {
-                return { i, subject: obj }
-            }
-        }).filter(a => a);
-
-        const subjectI = this.schedule.subjects.indexOf(subject);
-        const position = interfearing.reduce((a, b) => b.i < subjectI ? a + 1 : a, 1);
-
-        return { divide: interfearing.length + 1, position: position };
     },
 
     showModal(type, content) {
@@ -277,16 +261,6 @@ const app = vue.createApp({
     removeTeacher(teacherId) {
         const i = this.schedule.teachers.findIndex(teacher => teacher.id == teacherId);
         this.schedule.teachers.splice(i, 1);
-
-        // const purgeTeacher = array => array.map(subject => {
-        //     console.log(subject.teachers, teacherId);
-        //     const teachers = subject.teachers.filter(teacher => teacher != teacherId);
-        //     console.log(teachers);
-        //     return Object.assign(subject, { teachers });
-        // });
-
-        // this.schedule.templates = purgeTeacher(this.schedule.templates);
-        // this.schedule.subjects = purgeTeacher(this.schedule.subjects);
         this.markUnsaved();
     },
 
@@ -306,6 +280,7 @@ const app = vue.createApp({
         }
 
         this.showModal("input:template", {
+            label: "Ny mall",
             done: this.createTemplate,
             error: null
         });
@@ -321,6 +296,7 @@ const app = vue.createApp({
         }
 
         this.showModal("input:template", {
+            label: "Redigera mall",
             done: this.editTemplate.bind(this, template.id),
             error: null
         });
@@ -361,21 +337,21 @@ const app = vue.createApp({
     removeTemplate(templateId) {
         this.schedule.subjects = this.schedule.subjects.filter(subject => subject.template != templateId);
         this.templateFilter = null;
-        
+
         const templateI = this.schedule.templates.findIndex(template => template.id == templateId);
         this.schedule.templates.splice(templateI, 1);
         this.markUnsaved();
-        
+
         this.closeModal();
     },
     
     mounted() {
-        let rawSchedule =  localStorage.getItem("schedule");
+        const rawSchedule =  localStorage.getItem("schedule");
         if (rawSchedule) {
             this.schedule = JSON.parse(rawSchedule);
         }
-        
-        this.createPlaceholder = NaN;
+
+        this.subjectCreationPlaceholder = NaN;
         window.addEventListener("keydown", e => {
             if (e.key == "Escape") {
                 this.closeModal();
@@ -389,19 +365,6 @@ const app = vue.createApp({
             }
         });
 
-        window.addEventListener("keyup", e => {
-            if (e.key == "Control") {
-                this.createPlaceholder = NaN;
-            }
-        });
-        window.addEventListener("mousemove", e => {
-            if (e.ctrlKey && !this.modalType) {
-                this.createPlaceholder = Math.round(this.mouseYToScheduleTime(e.clientY + window.scrollY) / 5) * 5;
-            } else {
-                this.createPlaceholder = NaN;
-            }
-        });
-
         window.addEventListener("beforeunload", e => {
             if (this.hasUnsavedChanges) {
                 e.preventDefault();
@@ -409,10 +372,49 @@ const app = vue.createApp({
             }
         });
 
-        const updateAllowConfigMenuToggling = () => {
-            this.allowConfigMenuToggling = document.querySelector("#config-container").clientWidth < 528;
-        }
+        let lastClientY = 0;
+        const updateSubjectCreationPlaceholder = e => {
+            lastClientY = e.clientY || lastClientY;
 
+            if (this.modalType) return;
+
+            if (e.ctrlKey) {
+                this.subjectCreationPlaceholder = Math.round(this.mouseYToScheduleTime(lastClientY + window.scrollY) / 5) * 5;
+            } else if (this.subjectCreationPlaceholder) {
+                this.subjectCreationPlaceholder = NaN;
+            }
+        }
+        window.addEventListener("mousemove", updateSubjectCreationPlaceholder);
+        window.addEventListener("keydown", updateSubjectCreationPlaceholder);
+
+        window.addEventListener("keyup", e => {
+            if (e.key == "Control") {
+                this.subjectCreationPlaceholder = NaN;
+            }
+        });
+
+
+        const updateAllowConfigMenuToggling = () => {
+            let hasWrapped = false;
+            let lastTop = NaN;
+
+            const configDivs = document.getElementsByClassName("config");
+            for (let i = 0; i < configDivs.length; i++) {
+                const boundingBox = configDivs[i].getBoundingClientRect();
+                if (lastTop) {
+                    if (boundingBox.top != lastTop) {
+                        hasWrapped = true;
+                        break;
+                    }
+                }
+
+                lastTop = boundingBox.top;
+            }
+
+            console.log(hasWrapped);
+
+            this.allowConfigMenuToggling = hasWrapped;
+        }
         window.addEventListener("resize", updateAllowConfigMenuToggling);
         requestAnimationFrame(updateAllowConfigMenuToggling);
 
@@ -424,3 +426,4 @@ const app = vue.createApp({
         this.loaded = true;
     }
 }).mount("#root");
+

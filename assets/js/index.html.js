@@ -36,7 +36,7 @@ createApp({
     tags: [ ],
     today: (new Date().getDay()),
     now: (new Date().getHours() * 60 + new Date().getMinutes()),
-    tagPlaceholder: NaN,
+    tagCreationPlaceholder: NaN,
     loaded: false,
     warning: "",
 
@@ -70,22 +70,6 @@ createApp({
         });
     },
 
-    getInterfearData(subject) {
-        const end = subject.begin + subject.length;
-        const interfearing = this.schedule.subjects.map((obj, i) => {
-            const aEnd = obj.begin + obj.length;
-            if (subject.id == obj.id) return;
-            if ((subject.begin <= aEnd) && (end >= obj.begin)) {
-                return { i, subject: obj }
-            }
-        }).filter(a => a);
-
-        const subjectI = this.schedule.subjects.indexOf(subject);
-        const position = interfearing.reduce((a, b) => b.i < subjectI ? a + 1 : a, 1);
-
-        return { divide: interfearing.length + 1, position: position };
-    },
-
     showModal(type, content) {
         const split = type.split(":");
         this.modalType = split.splice(0, 1);
@@ -97,7 +81,7 @@ createApp({
         this.modalType = null;
     },
 
-    tagInputModal(dayI, e) {
+    createTagModal(dayI, e) {
         this.modalInput = { time: this.humanTime(this.mouseYToScheduleTime(e.clientY + window.scrollY), true), label: "" }
         this.showModal("input:tag", { done: this.createTag.bind(this, dayI) });
     },
@@ -134,23 +118,31 @@ createApp({
             this.schedule = JSON.parse(rawSchedule);
         }
 
-        this.tagPlaceholder = NaN;
+        this.tagCreationPlaceholder = NaN;
         window.addEventListener("keydown", e => {
             if (e.key == "Escape") {
                 this.closeModal();
             }
         });
 
+        let lastClientY = 0;
+        const updateTagCreationPlaceholder = e => {
+            lastClientY = e.clientY || lastClientY;
+
+            if (this.modalType) return;
+
+            if (e.ctrlKey) {
+                this.tagCreationPlaceholder = Math.round(this.mouseYToScheduleTime(lastClientY + window.scrollY));
+            } else if (this.tagCreationPlaceholder) {
+                this.tagCreationPlaceholder = NaN;
+            }
+        }
+        window.addEventListener("mousemove", updateTagCreationPlaceholder);
+        window.addEventListener("keydown", updateTagCreationPlaceholder);
+
         window.addEventListener("keyup", e => {
             if (e.key == "Control") {
-                this.tagPlaceholder = NaN;
-            }
-        });
-        window.addEventListener("mousemove", e => {
-            if (e.ctrlKey && !this.modalType) {
-                this.tagPlaceholder = this.mouseYToScheduleTime(e.clientY + window.scrollY);
-            } else {
-                this.tagPlaceholder = NaN;
+                this.tagCreationPlaceholder = NaN;
             }
         });
 
