@@ -231,10 +231,13 @@ main {
     margin: 4px;
     padding: 8px;
     font-size: 1em;
+    text-decoration: none;
+    color: #000000;
     background: transparent;
     border: 1px solid #dfdfdf;
     border-radius: 8px;
     transition: 200ms;
+    cursor: default;
 }
 
 .btn:not(:disabled):is(:hover, :focus) {

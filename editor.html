@@ -128,10 +128,10 @@
         <div class="content">
             <main>
                 <div class="btns">
-                    <button @click="window.open('index.html', '_self')" class="btn">
+                    <a href="index.html" class="btn">
                         <i class="fa-solid fa-calendar-week btn-icon"></i>
                         <span class="btn-label">Visa schema</span>
-                    </button>
+                    </a>
                     <button @click="saveSchedule" :disabled="!hasUnsavedChanges" class="btn">
                         <i class="fa-solid fa-floppy-disk btn-icon"></i>
                         <span class="btn-label">Spara</span>
